@@ -39,9 +39,9 @@ export class LoginUserInput {
 export class UpdatePassword {
   @Field()
   @IsNotEmpty()
-  old_password: string
+  oldPassword: string
 
   @Field()
   @IsNotEmpty()
-  new_password!: string
+  newPassword!: string
 }

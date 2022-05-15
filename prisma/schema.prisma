@@ -30,7 +30,7 @@ model Plane {
   depatureAirport  String
   arrivalAirport   String
   createdAt         DateTime        @default(now())
-  ticket            Ticket[]
+  tickets            Ticket[]
 }
 
 model Ticket {

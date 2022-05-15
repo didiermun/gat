@@ -25,5 +25,5 @@ export class Plane {
     createdAt: Date
 
     @Field(type => [Ticket])
-    ticket: Ticket[]
+    tickets?: Ticket[]
 }

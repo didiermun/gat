@@ -25,5 +25,5 @@ export class User {
     createdAt: Date
 
     @Field(type => [Ticket])
-    ticket: Ticket[]
+    tickets?: Ticket[]
 }

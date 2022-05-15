@@ -16,17 +16,12 @@ import {
   Resolver,
 } from '@nestjs/graphql'
 import { JwtService } from '@nestjs/jwt'
-import { users } from '@prisma/client'
 import { ApolloError } from 'apollo-server-express'
 import * as bcrypt from 'bcrypt'
+import { CreateUserInput, LoginUserInput, UpdatePassword } from 'src/inputs/User.inputs'
 import { PrismaService } from 'src/prisma.service'
-import { Roles } from '../decorators/roles.decorator'
 import { UserGuard } from '../guards/user.guard'
-import { LoginUserInput } from '../inputs/LoginUser.input'
-import { SignUpUserInput } from '../inputs/SingUpUser.input'
-import { updatePasswordInput } from '../inputs/updatePassword.input'
-import { UpdateUserInput } from '../inputs/UpdateUser.input'
-import { ROLES, User } from '../models/user'
+import { User } from '../models/user'
 import { hash, validatePassword } from '../utils/hashPassword'
 
 @ObjectType()
@@ -44,14 +39,23 @@ export class UsersResolver {
 
   @Query(returns => User, { nullable: true, name: 'getUser' })
   async user(@Args('id') id: string) {
-    return this.prismaService.users.findUnique({
+    return this.prismaService.user.findUnique({
       where: { id },
+    })
+  }
+
+  @Query(returns => [User], { nullable: true, name: 'allUsers'})
+  async allUsers(){
+    return await this.prismaService.user.findMany({
+      include: {
+        tickets: true
+      }
     })
   }
 
   @Mutation(returns => LoginResponse, { name: 'login' })
   async loginUser(@Args('data') data: LoginUserInput) {
-    const findUser = await this.prismaService.users.findUnique({
+    const findUser = await this.prismaService.user.findUnique({
       where: {
         email: data.email,
       },
@@ -82,8 +86,8 @@ export class UsersResolver {
   }
 
   @Mutation(returns => User)
-  async signup(@Args('data') data: SignUpUserInput) {
-    const checkUserExists = await this.prismaService.users.findFirst({
+  async signup(@Args('data') data: CreateUserInput) {
+    const checkUserExists = await this.prismaService.user.findFirst({
       where: {
         email: data.email,
       },
@@ -95,30 +99,24 @@ export class UsersResolver {
 
     const hashedPassword = await hash(data.password)
 
-    return this.prismaService.users.create({
-      data: {
-        email: data.email,
-        lastName: data.lastName,
-        firstName: data.lastName,
-        password: hashedPassword,
-        role: data.role,
-      },
+    return this.prismaService.user.create({
+      data: {...data, password: hashedPassword},
     })
   }
 
   @Mutation(returns => User, { name: 'updateUser' })
   @UseGuards(UserGuard)
   async updateUser(
-    @Args('data') data: UpdateUserInput,
+    @Args('data') data: CreateUserInput,
     @Context() ctx,
-  ): Promise<users> {
-    const user = await this.prismaService.users.findUnique({
+  ): Promise<User> {
+    const user = await this.prismaService.user.findUnique({
       where: { id: ctx.user.id },
     })
     if (!user) {
       throw new ApolloError('User not found', 'USER_NOT_FOUND')
     }
-    const updatedUser = await this.prismaService.users.update({
+    const updatedUser = await this.prismaService.user.update({
       where: {
         id: ctx.user.id,
       },
@@ -131,11 +129,11 @@ export class UsersResolver {
   @Mutation(returns => User, { name: 'updateUserPassword' })
   @UseGuards(UserGuard)
   async updateUserPassword(
-    @Args('data') data: updatePasswordInput,
+    @Args('data') data: UpdatePassword,
     @Context() ctx,
   ) {
     const checkPassword = await bcrypt.compare(
-      data.currentPassword,
+      data.oldPassword,
       ctx.user.password,
     )
 
@@ -143,7 +141,7 @@ export class UsersResolver {
       throw new ForbiddenException('Password mismatch')
     }
 
-    const updatedUser = await this.prismaService.users.update({
+    const updatedUser = await this.prismaService.user.update({
       where: {
         id: ctx.user.id,
       },
@@ -156,9 +154,8 @@ export class UsersResolver {
 
   @Mutation(returns => User, { name: 'deleteUser' })
   @UseGuards(UserGuard)
-  @Roles(ROLES.ADMIN)
   async deleteUser(@Args('id') id: string, @Context() ctx) {
-    const deleteUser = await this.prismaService.users.delete({
+    const deleteUser = await this.prismaService.user.delete({
       where: {
         id,
       },
