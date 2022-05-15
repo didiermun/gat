@@ -16,13 +16,12 @@ import {
   import { JwtService } from '@nestjs/jwt'
   import { ApolloError } from 'apollo-server-express'
   import { CreateTicket } from 'src/inputs/ticket.input'
-  import { Plane } from 'src/models/plane'
   import { Ticket } from 'src/models/ticket'
   import { PrismaService } from 'src/prisma.service'
 import { generateCode } from 'src/utils/codeGenerator'
   import { UserGuard } from '../guards/user.guard'
   
-  @Resolver(Plane)
+  @Resolver(Ticket)
   export class TicketResolver {
     constructor(
       @Inject(PrismaService) private prismaService: PrismaService,
@@ -40,7 +39,7 @@ import { generateCode } from 'src/utils/codeGenerator'
       })
     }
   
-    @Query(returns => [Plane], { nullable: true, name: 'allTickets'})
+    @Query(returns => [Ticket], { nullable: true, name: 'allTickets'})
     async allTickets(){
       return await this.prismaService.ticket.findMany({
         include: {
@@ -51,7 +50,7 @@ import { generateCode } from 'src/utils/codeGenerator'
     }
   
   
-    @Mutation(returns => Plane)
+    @Mutation(returns => Ticket)
     async addNewTicket(@Args('data') data: CreateTicket) {
         let code = "";
         let found = true;
@@ -66,7 +65,7 @@ import { generateCode } from 'src/utils/codeGenerator'
             throw new ApolloError('Plane not found', 'PLANE_NOT_FOUND');
         }
 
-        if(data.userId){
+        if(data.userId || data.userId === ""){
             const user = await this.prismaService.user.findFirst({ 
                 where:{
                     id: data.userId
@@ -75,6 +74,17 @@ import { generateCode } from 'src/utils/codeGenerator'
 
             if(!user){
                 throw new ApolloError('User not found', 'USER_NOT_FOUND');
+            }
+
+            const exists = await this.prismaService.ticket.findFirst({
+                where:{
+                    userId: data.userId,
+                    planeId: data.planeId
+                }
+            })
+
+            if(exists){
+                throw new ApolloError('One user can not have two tickets in one plane', 'TICKET_DUPLICATE');
             }
         }
         while(found){
@@ -90,7 +100,11 @@ import { generateCode } from 'src/utils/codeGenerator'
             }
         }
         const created = await this.prismaService.ticket.create({
-            data: {...data, code},
+            data: {
+                ...data,
+                code,
+                isBooked: data.userId ? true : false
+                },
         })
 
         return await this.ticket(created.id)
@@ -102,33 +116,87 @@ import { generateCode } from 'src/utils/codeGenerator'
       @Args('data') data: CreateTicket,
       @Context() ctx,
     ) {
-      const ticket = await this.prismaService.user.findUnique({
-        where: { id: id },
-      })
-      if (!ticket) {
-        throw new ApolloError('Ticket not found', 'TICKET_NOT_FOUND')
-      }
-      const updateTicket = await this.prismaService.ticket.update({
-        where: {
-          id: id,
-        },
-        data: data,
-      })
-  
-      return await this.ticket(updateTicket.id);
+        if(data.planeId || data.planeId === ""){
+            const plane  =  await this.prismaService.plane.findFirst({ 
+                where:{
+                    id: data.planeId
+                }
+            })
+            if(!plane){
+                throw new ApolloError('Plane not found', 'PLANE_NOT_FOUND');
+            }
+        }
+
+        if(data.userId || data.userId === ""){
+            const user = await this.prismaService.user.findFirst({ 
+                where:{
+                    id: data.userId
+                }
+            })
+
+            if(!user){
+                throw new ApolloError('User not found', 'USER_NOT_FOUND');
+            }
+        }
+
+        const ticket = await this.prismaService.ticket.findUnique({
+            where: { id: id },
+        })
+        if (!ticket) {
+            throw new ApolloError('Ticket not found', 'TICKET_NOT_FOUND')
+        }
+        const updateTicket = await this.prismaService.ticket.update({
+            where: {
+            id: id,
+            },
+            data: {...data, isBooked: data.userId || ticket.userId ? true: false},
+        })
+    
+        return await this.ticket(updateTicket.id);
+    }
+
+    @Mutation(returns => Ticket, { name: 'addUserToTicket' })
+    @UseGuards(UserGuard)
+    async addUserToTicket(@Args('id') id: string,
+      @Args('userId') userId: string,
+    ) {
+        const user = await this.prismaService.user.findFirst({
+            where:{
+                id: userId,
+            }
+        })
+
+        if(!user){
+            throw new ApolloError('User not found', 'USER_NOT_FOUND');
+        }
+
+        const ticket = await this.prismaService.user.findUnique({
+            where: { id: id },
+        })
+        if (!ticket) {
+            throw new ApolloError('Ticket not found', 'TICKET_NOT_FOUND')
+        }
+        const updateTicket = await this.prismaService.ticket.update({
+            where: {
+            id: id,
+            },
+            data: {userId},
+        })
+    
+        return await this.ticket(updateTicket.id);
     }
   
     
   
-    @Mutation(returns => Plane, { name: 'deleteTicket' })
+    @Mutation(returns => Ticket, { name: 'deleteTicket' })
     @UseGuards(UserGuard)
     async deleteTicket(@Args('id') id: string, @Context() ctx) {
-      const deletePlane = await this.prismaService.plane.delete({
+      const deleteTicket = await this.prismaService.ticket.delete({
         where: {
           id,
         },
       })
-      return deletePlane
+      return deleteTicket
     }
   }
   

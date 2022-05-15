@@ -4,7 +4,7 @@ import { Field, ID, InputType } from '@nestjs/graphql'
 export class CreateTicket {
 
     @Field(type => ID)
-    planeId!: string
+    planeId: string
 
     @Field(type => ID)
     userId: string

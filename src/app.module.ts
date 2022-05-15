@@ -55,13 +55,34 @@ import { jwtConstants } from './utils/jwtSetup'
             message: 'Not authenticated',
             error: 'Unauthenticated',
           }
-        } else if (error.extensions.code === 'USER_NOT_FOUND') {
+        } else if (error.extensions.code === 'PLANE_NOT_FOUND') {
+          return {
+            status: 404,
+            message: 'Plane not found, Data form token fails in data store',
+            error: 'Notfound',
+          }
+        }
+        else if (error.extensions.code === 'USER_NOT_FOUND') {
+          return {
+            status: 404,
+            message: 'User not found, Data form token fails in data store',
+            error: 'Notfound',
+          }
+        } 
+        else if (error.extensions.code === 'TICKET_NOT_FOUND') {
+          return {
+            status: 404,
+            message: 'Ticket not found, Data form token fails in data store',
+            error: 'Notfound',
+          }
+        }
+        else if (error.extensions.code === 'TICKET_DUPLICATE') {
           return {
             status: 400,
-            message: 'User not found, Data form token fails in data store',
-            error: 'Unauthenticated',
+            message: 'User can not have more than one ticket on one plane',
+            error: 'Duplicates',
           }
-        } else if (!error.path) {
+        }else if (!error.path) {
           return {
             message: error.message,
             status: 400,
