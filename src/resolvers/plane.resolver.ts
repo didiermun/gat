@@ -59,9 +59,11 @@ import {
         throw new HttpException('Plane name already exists', HttpStatus.BAD_REQUEST)
       }
   
-      return this.prismaService.plane.create({
+      const created = await this.prismaService.plane.create({
         data,
       })
+
+      return await this.plane(created.id)
     }
   
     @Mutation(returns => Plane, { name: 'updatePlane' })
@@ -69,7 +71,7 @@ import {
     async updatePlane(
       @Args('data') data: CreatePlaneInput,
       @Context() ctx,
-    ): Promise<Plane> {
+    ) {
       const user = await this.prismaService.user.findUnique({
         where: { id: ctx.user.id },
       })
@@ -83,7 +85,7 @@ import {
         data: data,
       })
   
-      return updatedPlane
+      return await this.plane(updatedPlane.id);
     }
   
     

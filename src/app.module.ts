@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common'
 import { GraphQLModule } from '@nestjs/graphql'
 import { JwtModule } from '@nestjs/jwt'
 import { GraphQLError, GraphQLFormattedError } from 'graphql'
+import { PlanesModule } from './modules/planes.module'
+import { TicketsModule } from './modules/tickets.module'
 import { UsersModule } from './modules/users.module'
 import { jwtConstants } from './utils/jwtSetup'
 
@@ -87,6 +89,8 @@ import { jwtConstants } from './utils/jwtSetup'
       },
     }),
     UsersModule,
+    PlanesModule,
+    TicketsModule
   ],
   controllers: [],
   providers: [],

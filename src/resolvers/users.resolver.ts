@@ -41,6 +41,9 @@ export class UsersResolver {
   async user(@Args('id') id: string) {
     return this.prismaService.user.findUnique({
       where: { id },
+      include:{
+        tickets: true,
+      }
     })
   }
 
@@ -99,17 +102,18 @@ export class UsersResolver {
 
     const hashedPassword = await hash(data.password)
 
-    return this.prismaService.user.create({
+    const created =  await this.prismaService.user.create({
       data: {...data, password: hashedPassword},
     })
+
+    return await this.user(created.id)
   }
 
   @Mutation(returns => User, { name: 'updateUser' })
-  @UseGuards(UserGuard)
   async updateUser(
     @Args('data') data: CreateUserInput,
     @Context() ctx,
-  ): Promise<User> {
+  ) {
     const user = await this.prismaService.user.findUnique({
       where: { id: ctx.user.id },
     })
@@ -123,11 +127,10 @@ export class UsersResolver {
       data: data,
     })
 
-    return updatedUser
+    return await this.user(updatedUser.id);
   }
 
   @Mutation(returns => User, { name: 'updateUserPassword' })
-  @UseGuards(UserGuard)
   async updateUserPassword(
     @Args('data') data: UpdatePassword,
     @Context() ctx,

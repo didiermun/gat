@@ -17,11 +17,14 @@ export class Ticket {
     userId: string
 
     @Field(type => User, { nullable: true })
-    passenger?: User
+    passenger: User
 
     @Field(type => Plane)
     plane?: Plane
 
     @Field(type => Boolean)
     isBooked: Boolean
+
+    @Field(type => String)
+    createdAt: Date
 }

@@ -1,6 +1,6 @@
-import { Field, ObjectType, ID } from '@nestjs/graphql'
+import { Field, ID, InputType } from '@nestjs/graphql'
 
-@ObjectType()
+@InputType()
 export class CreateTicket {
 
     @Field(type => ID)

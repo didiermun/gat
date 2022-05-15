@@ -39,6 +39,7 @@ model Ticket {
   isBooked    Boolean @default(false)
   planeId    String
   userId     String?
+  createdAt         DateTime        @default(now())
   passenger   User? @relation(fields:[userId], references:[id])
   plane       Plane @relation(fields:[planeId], references:[id])
 }
