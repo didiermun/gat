@@ -33,6 +33,7 @@ import { generateCode } from 'src/utils/codeGenerator'
       return this.prismaService.ticket.findUnique({
         where: { id },
         include:{
+            //populate passenger and plane to the ticket
             passenger: true,
             plane: true,
         }
@@ -43,6 +44,7 @@ import { generateCode } from 'src/utils/codeGenerator'
     async allTickets(){
       return await this.prismaService.ticket.findMany({
         include: {
+            //populate passenger and plane to the ticket
           passenger: true,
           plane: true,
         }
@@ -54,8 +56,8 @@ import { generateCode } from 'src/utils/codeGenerator'
     async addNewTicket(@Args('data') data: CreateTicket) {
         let code = "";
         let found = true;
-
-        const plane = await this.prismaService.plane.findUnique({ 
+        //check if plane exists
+        const plane = await this.prismaService.plane.findFirst({ 
             where:{
                 id: data.planeId
             }
@@ -65,6 +67,7 @@ import { generateCode } from 'src/utils/codeGenerator'
             throw new ApolloError('Plane not found', 'PLANE_NOT_FOUND');
         }
 
+        //if userId is passed, check if user exists
         if(data.userId || data.userId === ""){
             const user = await this.prismaService.user.findFirst({ 
                 where:{
@@ -87,6 +90,8 @@ import { generateCode } from 'src/utils/codeGenerator'
                 throw new ApolloError('One user can not have two tickets in one plane', 'TICKET_DUPLICATE');
             }
         }
+
+        //generate a code that doesn't exists in db
         while(found){
             code = generateCode();
             const ticket = await this.prismaService.ticket.findFirst({
@@ -107,6 +112,7 @@ import { generateCode } from 'src/utils/codeGenerator'
                 },
         })
 
+        //return by getticket to populate passenger and plane
         return await this.ticket(created.id)
     }
   
@@ -116,6 +122,7 @@ import { generateCode } from 'src/utils/codeGenerator'
       @Args('data') data: CreateTicket,
       @Context() ctx,
     ) {
+        //if plane is passed, check for existence
         if(data.planeId || data.planeId === ""){
             const plane  =  await this.prismaService.plane.findFirst({ 
                 where:{
@@ -127,6 +134,7 @@ import { generateCode } from 'src/utils/codeGenerator'
             }
         }
 
+        //if user is passed check for existence
         if(data.userId || data.userId === ""){
             const user = await this.prismaService.user.findFirst({ 
                 where:{
@@ -155,6 +163,9 @@ import { generateCode } from 'src/utils/codeGenerator'
         return await this.ticket(updateTicket.id);
     }
 
+
+
+    // add user to a ticket
     @Mutation(returns => Ticket, { name: 'addUserToTicket' })
     @UseGuards(UserGuard)
     async addUserToTicket(@Args('id') id: string,

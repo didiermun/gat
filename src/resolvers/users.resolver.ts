@@ -97,9 +97,10 @@ export class UsersResolver {
     })
 
     if (checkUserExists) {
-      throw new HttpException('Email already Exists', HttpStatus.BAD_REQUEST)
+      throw new ApolloError('Email already Exists', 'EMAIL_DUPLICATE');
     }
 
+    //generate a hashed password
     const hashedPassword = await hash(data.password)
 
     const created =  await this.prismaService.user.create({
@@ -114,7 +115,9 @@ export class UsersResolver {
     @Args('data') data: CreateUserInput,
     @Context() ctx,
   ) {
-    const user = await this.prismaService.user.findUnique({
+
+    //check if user exists
+    const user = await this.prismaService.user.findFirst({
       where: { id: ctx.user.id },
     })
     if (!user) {

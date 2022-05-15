@@ -27,11 +27,13 @@ import {
       private jwtService: JwtService,
     ) {}
   
+
     @Query(returns => Plane, { nullable: true, name: 'getPlane' })
     async plane(@Args('id') id: string) {
       return this.prismaService.plane.findUnique({
         where: { id },
         include:{
+          //include tickets on plane
             tickets: true,
         }
       })
@@ -41,6 +43,7 @@ import {
     async allPlanes(){
       return await this.prismaService.plane.findMany({
         include: {
+          //include tickets on plane
           tickets: true
         }
       })
@@ -51,6 +54,7 @@ import {
     async addNewPlane(@Args('data') data: CreatePlaneInput) {
       const exists = await this.prismaService.plane.findFirst({
         where: {
+          // look for duplicate name
           name: data.name,
         },
       })
@@ -62,25 +66,26 @@ import {
       const created = await this.prismaService.plane.create({
         data,
       })
-
+      // return using getone to get it populated with tickets
       return await this.plane(created.id)
     }
   
     @Mutation(returns => Plane, { name: 'updatePlane' })
     @UseGuards(UserGuard)
     async updatePlane(
-      @Args('data') data: CreatePlaneInput,
-      @Context() ctx,
+      @Args('data') data: CreatePlaneInput,@Args('id') id: string,
     ) {
-      const user = await this.prismaService.user.findUnique({
-        where: { id: ctx.user.id },
+
+      //check if plane exists
+      const user = await this.prismaService.ticket.findUnique({
+        where: { id },
       })
       if (!user) {
         throw new ApolloError('Plane not found', 'PLANE_NOT_FOUND')
       }
       const updatedPlane = await this.prismaService.plane.update({
         where: {
-          id: ctx.user.id,
+          id,
         },
         data: data,
       })

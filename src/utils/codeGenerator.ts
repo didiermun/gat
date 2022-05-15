@@ -1,3 +1,5 @@
+
+//generate a code that has characters and numbers [made of ten elements]
 export function generateCode(){
     let code = "";
     let alphaPossible = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";

@@ -82,6 +82,13 @@ import { jwtConstants } from './utils/jwtSetup'
             message: 'User can not have more than one ticket on one plane',
             error: 'Duplicates',
           }
+        }
+        else if (error.extensions.code === 'EMAIL_DUPLICATE') {
+          return {
+            status: 400,
+            message: 'Email is already in use',
+            error: 'Duplicates',
+          }
         }else if (!error.path) {
           return {
             message: error.message,
