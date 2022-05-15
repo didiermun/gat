@@ -30,8 +30,32 @@ import { generateCode } from 'src/utils/codeGenerator'
   
     @Query(returns => Ticket, { nullable: true, name: 'getTicket' })
     async ticket(@Args('id') id: string) {
-      return this.prismaService.ticket.findUnique({
+      return this.prismaService.ticket.findFirst({
         where: { id },
+        include:{
+            //populate passenger and plane to the ticket
+            passenger: true,
+            plane: true,
+        }
+      })
+    }
+
+    @Query(returns => Ticket,{ nullable: true, name: 'getTicketsByUser' })
+    async getTicketsByUser(@Args('userId') userId: string) {
+      return this.prismaService.ticket.findMany({
+        where: { userId },
+        include:{
+            //populate passenger and plane to the ticket
+            passenger: true,
+            plane: true,
+        }
+      })
+    }
+
+    @Query(returns => Ticket,{ nullable: true, name: 'getTicketsByPlane' })
+    async getTicketsByPlane(@Args('planeId') planeId: string) {
+      return this.prismaService.ticket.findMany({
+        where: { planeId },
         include:{
             //populate passenger and plane to the ticket
             passenger: true,
